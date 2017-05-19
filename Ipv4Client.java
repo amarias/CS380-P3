@@ -13,23 +13,21 @@ public class Ipv4Client {
 			BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
 			// Header fields
-			byte versionAndhlen = 0x45;
-			byte tos = 0;
+			short versionHlenAndTos = 0x4500;
 			short length;
 			short ident = 0;
 			short flagsAndOffset = 0x4000; // no fragmentation
 			byte ttl = 50;
 			byte protocol = 6; // TCP
-			short checksum = 0;// header only
+			short checksum;// header only
 			int sourceAddr = 0; // IP address of my choice
-			int destAddr = 0; // IP address of server
+			byte[] destAddr = socket.getInetAddress().getAddress();
 			byte[] data = null;
 			// Ignoring Options/Pad
 
 			int dataSize = 2;
 			int version = 4;
 			int hlen = 5;
-
 			for (int i = 0; i < 12; ++i) {
 				System.out.println("Data Length:" + dataSize);
 				data = ipv4.fillData(dataSize);
@@ -37,10 +35,10 @@ public class Ipv4Client {
 				length = (short) ((version * hlen) + dataSize); // header+data
 				dataSize *= 2;
 
-				// Find Checksum
-				ByteBuffer bb = ByteBuffer.allocate(19 + dataSize);
-				bb.put(versionAndhlen);
-				bb.putShort(tos);
+				// Checksum
+				checksum = 0;
+				ByteBuffer bb = ByteBuffer.allocate(20 + dataSize);
+				bb.putShort(versionHlenAndTos);
 				bb.putShort(length);
 				bb.putShort(ident);
 				bb.putShort(flagsAndOffset);
@@ -48,22 +46,22 @@ public class Ipv4Client {
 				bb.put(protocol);
 				bb.putShort(checksum);
 				bb.putInt(sourceAddr);
-				bb.putInt(destAddr);
+				bb.put(destAddr);
+				bb.put(data);
 
 				checksum = ipv4.checksum(bb.array());
 
 				// Create Packet
 				bb.clear();
-				bb.put(versionAndhlen);
-				bb.putShort(tos);
+				bb.putShort(versionHlenAndTos);
 				bb.putShort(length);
 				bb.putShort(ident);
 				bb.putShort(flagsAndOffset);
 				bb.put(ttl);
 				bb.put(protocol);
-				bb.putShort((short) 0x5B73);
+				bb.putShort(checksum);
 				bb.putInt(sourceAddr);
-				bb.putInt(destAddr);
+				bb.put(destAddr);
 				bb.put(data);
 
 				socket.getOutputStream().write(bb.array());
@@ -102,6 +100,7 @@ public class Ipv4Client {
 			}
 			length -= 2;
 		}
+
 		return (short) ~(sum & 0xFFFF);
 	}
 
