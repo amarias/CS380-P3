@@ -33,7 +33,6 @@ public class Ipv4Client {
 				data = ipv4.fillData(dataSize);
 
 				length = (short) ((version * hlen) + dataSize); // header+data
-				dataSize *= 2;
 
 				// Checksum
 				checksum = 0;
@@ -66,6 +65,8 @@ public class Ipv4Client {
 
 				socket.getOutputStream().write(bb.array());
 				System.out.println(br.readLine() + "\n");
+
+				dataSize *= 2;
 			}
 
 			socket.close();
